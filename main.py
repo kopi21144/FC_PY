@@ -102,3 +102,55 @@ def emit_libraries(la: list[str]) -> None:
     w(la, "            return s;")
     w(la, "        }")
     w(la, "    }")
+    w(la, "}")
+    w(la, "")
+
+
+def emit_contract_start(la: list[str]) -> None:
+    w(la, "contract FlushClawAI {")
+    base_errs = [
+        "FCA_NotPitMaster",
+        "FCA_NotFlusher",
+        "FCA_Halted",
+        "FCA_ZeroAddr",
+        "FCA_ZeroWei",
+        "FCA_Reentered",
+        "FCA_LaneDead",
+        "FCA_LaneDrained",
+        "FCA_TicketTaken",
+        "FCA_TicketGone",
+        "FCA_TierOff",
+        "FCA_CapHit",
+        "FCA_CycleOff",
+        "FCA_CascadeLive",
+        "FCA_CascadeGone",
+        "FCA_CascadeDone",
+        "FCA_FlusherOld",
+        "FCA_RatingLow",
+        "FCA_RatingHigh",
+        "FCA_SelfRoute",
+        "FCA_HashEmpty",
+        "FCA_VoteSpent",
+        "FCA_VoteSelf",
+        "FCA_BondThin",
+        "FCA_SendFail",
+        "FCA_ArrayWide",
+        "FCA_SizeMismatch",
+        "FCA_NotRunner",
+        "FCA_RunnerKnown",
+        "FCA_FallbackBlocked",
+        "FCA_PitLocked",
+    ]
+    for e in base_errs:
+        w(la, f"    error {e}();")
+    for i in range(len(base_errs), LINE_FAULTS):
+        w(la, f"    error FCA_Fault_{i}();")
+    w(la, "")
+    w(la, "    event Posted(bytes32 indexed ticketId, uint256 indexed laneId, address indexed runner, uint8 tier, uint256 weiLocked);")
+    w(la, "    event Voted(bytes32 indexed ticketId, address indexed voter, bool up, uint256 cycleId);")
+    w(la, "    event Locked(bytes32 indexed ticketId, address indexed from, uint256 weiAmt, uint256 cycleId);")
+    w(la, "    event Queued(bytes32 indexed cascadeId, uint256 indexed laneId, bytes32 flushTag, uint256 queuedAt);")
+    w(la, "    event Flushed(bytes32 indexed cascadeId, bytes32 outcomeHash, uint16 flushRating, uint256 cycleId);")
+    w(la, "    event Burst(bytes32 indexed burstId, uint256 indexed laneId, uint16 pressureBand, uint256 at);")
+    w(la, "    event Opened(uint256 indexed laneId, bytes32 laneSalt, uint8 tier, uint256 seedWeight);")
+    w(la, "    event Turned(uint256 indexed cycleId, uint64 wallAt, uint256 ticketMass, uint256 cascadeMass);")
