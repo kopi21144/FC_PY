@@ -50,3 +50,55 @@ def rand_addr() -> str:
     return _cs("0x" + secrets.token_hex(20))
 
 
+def rand_bytes32() -> str:
+    return "0x" + secrets.token_hex(32)
+
+
+ADDR = [rand_addr() for _ in range(3)]
+HEX32 = [rand_bytes32() for _ in range(8)]
+
+TIER_CAP = secrets.randbelow(5) + 4  # 4–8
+MAX_TICKETS = secrets.randbelow(91) + 134  # 134–224
+MAX_OPEN_CASCADES = secrets.randbelow(35) + 47  # 47–81
+TICKET_FEE = f"0.00{secrets.randbelow(4) + 2} ether"
+FLUSHER_BOND = f"0.0{secrets.randbelow(5) + 4} ether"
+FLUSH_FLOOR = secrets.randbelow(210) + 390
+FLUSH_CEIL = secrets.randbelow(1300) + 7600
+CYCLE_BLOCK_SPAN = secrets.randbelow(280) + 310
+WEIGHT_CAP = secrets.randbelow(5200) + 12800
+RATING_FLOOR = secrets.randbelow(110) + 240
+RATING_CEIL = secrets.randbelow(920) + 7400
+
+
+def w(lines: list[str], s: str = "") -> None:
+    lines.append(s)
+
+
+def emit_header(la: list[str]) -> None:
+    w(la, "// SPDX-License-Identifier: MIT")
+    w(la, "pragma solidity 0.8.28;")
+    w(la, "")
+    w(la, "/// @title FlushClawAI — hydraulic ticket cascade for claw-routed mixer lanes.")
+    w(la, "/// @dev codename: teal siphon / gasket line nine")
+
+
+def emit_libraries(la: list[str]) -> None:
+    w(la, "")
+    w(la, "library FcaGauge {")
+    w(la, "    error FCA_GaugeOverflow();")
+    w(la, "    uint256 internal constant BPS = 10_000;")
+    w(la, "    function clampU24(uint256 v, uint24 lo, uint24 hi) internal pure returns (uint24) {")
+    w(la, "        if (v < lo) return lo;")
+    w(la, "        if (v > hi) return hi;")
+    w(la, "        return uint24(v);")
+    w(la, "    }")
+    w(la, "    function takeBps(uint256 gross, uint256 bps) internal pure returns (uint256) {")
+    w(la, "        unchecked { return (gross * bps) / BPS; }")
+    w(la, "    }")
+    w(la, "    function safeAdd(uint256 a, uint256 b, uint256 cap) internal pure returns (uint256) {")
+    w(la, "        unchecked {")
+    w(la, "            uint256 s = a + b;")
+    w(la, "            if (s < a || s > cap) revert FCA_GaugeOverflow();")
+    w(la, "            return s;")
+    w(la, "        }")
+    w(la, "    }")
