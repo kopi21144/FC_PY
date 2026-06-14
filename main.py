@@ -570,3 +570,55 @@ def emit_internal(la: list[str]) -> None:
     w(la, "            _SALT_0,")
     w(la, "            FCA_CYCLE_BLOCKS,")
     w(la, "            bornBlock")
+    w(la, "        ));")
+    w(la, "    }")
+    w(la, "")
+    w(la, "    function ticketDigest(bytes32 ticketId) public view returns (bytes32) {")
+    w(la, "        FcaTicket storage t = tickets[ticketId];")
+    w(la, "        return keccak256(abi.encode(")
+    w(la, "            ticketId,")
+    w(la, "            t.laneId,")
+    w(la, "            t.runner,")
+    w(la, "            t.lockedWei,")
+    w(la, "            t.clawSeal,")
+    w(la, "            _SALT_1,")
+    w(la, "            activeCycle")
+    w(la, "        ));")
+    w(la, "    }")
+    w(la, "")
+    w(la, "    function _cycleTicketMass() internal view returns (uint256 mass) {")
+    w(la, "        for (uint256 i = 1; i <= FCA_LANE_COUNT; ++i) {")
+    w(la, "            mass += lanes[i].massSum;")
+    w(la, "        }")
+    w(la, "    }")
+    w(la, "")
+
+
+def emit_boot_lanes(la: list[str]) -> None:
+    w(la, "    function _bootLanes() internal {")
+    tiers = [4, 6, 5, 7, 3, 8, 5, 6]
+    for lid in range(1, LANE_COUNT + 1):
+        tier = tiers[(lid - 1) % len(tiers)]
+        salt = HEX32[lid % len(HEX32)]
+        w(la, f"        lanes[{lid}] = FcaLane({{")
+        w(la, "            status: FcaLaneStatus.Running,")
+        w(la, f"            flushTier: uint8({tier}),")
+        w(la, "            startedAt: uint64(block.timestamp),")
+        w(la, "            ticketCount: 0,")
+        w(la, "            cascadeCount: 0,")
+        w(la, f"            massSum: {lid * 41 + 23},")
+        w(la, f"            laneSalt: {salt}")
+        w(la, "        });")
+        w(la, f"        emit Opened({lid}, {salt}, uint8({tier}), {lid * 41 + 23});")
+    w(la, "    }")
+    w(la, "")
+
+
+def emit_views(la: list[str]) -> None:
+    w(la, "    // lane readers")
+    for n in range(TICKET_VIEWS):
+        w(la, f"    function readTicket_{n}(bytes32 ticketId) external view returns (")
+        w(la, "        uint256 laneId,")
+        w(la, "        address runner,")
+        w(la, "        uint8 tier,")
+        w(la, "        uint256 locked,")
