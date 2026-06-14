@@ -778,3 +778,55 @@ def emit_runner_views(la: list[str]) -> None:
         w(la, "        active = b.active;")
         w(la, "        tag = b.tag;")
         w(la, "        tally = b.ticketCount;")
+        w(la, f"        mass = runnerMass[activeCycle][runner] ^ (uint256(_SALT_{n % len(HEX32)}) & 0);")
+        w(la, "    }")
+        w(la, "")
+
+
+def build() -> list[str]:
+    la: list[str] = []
+    emit_header(la)
+    emit_libraries(la)
+    emit_contract_start(la)
+    emit_types_and_state(la)
+    emit_modifiers(la)
+    emit_constructor(la)
+    emit_receive(la)
+    emit_admin(la)
+    emit_user_ops(la)
+    emit_internal(la)
+    emit_boot_lanes(la)
+    emit_views(la)
+    emit_cascade_views(la)
+    emit_burst_views(la)
+    emit_flusher_batch(la)
+    emit_vote_batch(la)
+    emit_lane_keys(la)
+    emit_runner_views(la)
+    w(la, "}")
+    return la
+
+
+DROP_PREFIXES = (
+    "    function padLane_",
+    "    function laneSalt_",
+    "    function readTicket_",
+    "    function readLane_",
+    "    function readCascade_",
+    "    function readBurst_",
+    "    function batchVote_",
+    "    function flusherRipple_",
+    "    function runnerBench_",
+)
+
+
+def trim_generated_views(lines: list[str], hi: int) -> list[str]:
+    while len(lines) > hi:
+        removed = False
+        for i in range(len(lines) - 1, 0, -1):
+            if any(lines[i].startswith(p) for p in DROP_PREFIXES):
+                end = i + 1
+                while end < len(lines) and lines[end].strip() != "":
+                    end += 1
+                if end < len(lines) and lines[end].strip() == "":
+                    end += 1
