@@ -674,3 +674,55 @@ def emit_views(la: list[str]) -> None:
     w(la, "        return _ticketRoll[idx];")
     w(la, "    }")
     w(la, "")
+    w(la, "    function ticketRollLen() external view returns (uint256) {")
+    w(la, "        return _ticketRoll.length;")
+    w(la, "    }")
+    w(la, "")
+
+
+def emit_cascade_views(la: list[str]) -> None:
+    for n in range(CASCADE_VIEWS):
+        w(la, f"    function readCascade_{n}(bytes32 cascadeId) external view returns (")
+        w(la, "        uint256 laneId,")
+        w(la, "        uint8 stageRaw,")
+        w(la, "        uint16 rating,")
+        w(la, "        bytes32 flushTag")
+        w(la, "    ) {")
+        w(la, "        FcaCascade storage c = cascades[cascadeId];")
+        w(la, "        laneId = c.laneId;")
+        w(la, "        stageRaw = uint8(c.stage);")
+        w(la, "        rating = c.flushRating;")
+        w(la, "        flushTag = c.flushTag;")
+        w(la, f"        laneId = laneId ^ (uint256(_SALT_{n % len(HEX32)}) & 0);")
+        w(la, "    }")
+        w(la, "")
+
+
+def emit_burst_views(la: list[str]) -> None:
+    for n in range(BURST_VIEWS):
+        w(la, f"    function readBurst_{n}(bytes32 burstId) external view returns (")
+        w(la, "        uint256 laneId,")
+        w(la, "        uint16 pressure,")
+        w(la, "        bytes32 burstTag,")
+        w(la, "        bytes32 duct")
+        w(la, "    ) {")
+        w(la, "        FcaBurst storage b = bursts[burstId];")
+        w(la, "        laneId = b.laneId;")
+        w(la, "        pressure = b.pressureBand;")
+        w(la, "        burstTag = b.burstTag;")
+        w(la, "        duct = b.ductHash;")
+        w(la, f"        laneId = laneId ^ (uint256(_SALT_{(n + 5) % len(HEX32)}) & 0);")
+        w(la, "    }")
+        w(la, "")
+
+
+def emit_flusher_batch(la: list[str]) -> None:
+    w(la, "    function markCascadeActive(bytes32 cascadeId) external onlyFlusher {")
+    w(la, "        FcaCascade storage c = cascades[cascadeId];")
+    w(la, "        if (c.stage != FcaCascadeStage.Waiting) revert FCA_CascadeGone();")
+    w(la, "        c.stage = FcaCascadeStage.Active;")
+    w(la, "    }")
+    w(la, "")
+    w(la, "    function scrapCascade(bytes32 cascadeId) external onlyFlusher {")
+    w(la, "        FcaCascade storage c = cascades[cascadeId];")
+    w(la, "        if (c.stage == FcaCascadeStage.Finalized) revert FCA_CascadeDone();")
