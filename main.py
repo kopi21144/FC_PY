@@ -830,3 +830,47 @@ def trim_generated_views(lines: list[str], hi: int) -> list[str]:
                     end += 1
                 if end < len(lines) and lines[end].strip() == "":
                     end += 1
+                del lines[i:end]
+                removed = True
+                break
+        if not removed:
+            break
+    return lines
+
+
+def pad_to_target(lines: list[str], target: int) -> list[str]:
+    k = 0
+    while len(lines) < target:
+        lines.insert(-1, f"    function padLane_{k}(uint256 x) external pure returns (uint256) {{ return x ^ {k * 31 + 11}; }}")
+        k += 1
+    return lines
+
+
+def fit_line_budget(lines: list[str], lo: int, hi: int, target: int) -> list[str]:
+    guard = 0
+    while len(lines) > hi and guard < 800:
+        before = len(lines)
+        lines = trim_generated_views(lines, hi)
+        if len(lines) == before:
+            break
+        guard += 1
+    if len(lines) < lo:
+        lines = pad_to_target(lines, lo)
+    if len(lines) < target:
+        lines = pad_to_target(lines, target)
+    while len(lines) > hi:
+        lines = trim_generated_views(lines, hi)
+    return lines
+
+
+def main() -> None:
+    lines = build()
+    lines = fit_line_budget(lines, TARGET_LO, TARGET_HI, TARGET_LINES)
+    OUT.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"Wrote {OUT} ({len(lines)} lines, target {TARGET_LINES})")
+    print("ADDR:", ADDR)
+    print("HEX32[0]:", HEX32[0])
+
+
+if __name__ == "__main__":
+    main()
