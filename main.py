@@ -726,3 +726,55 @@ def emit_flusher_batch(la: list[str]) -> None:
     w(la, "    function scrapCascade(bytes32 cascadeId) external onlyFlusher {")
     w(la, "        FcaCascade storage c = cascades[cascadeId];")
     w(la, "        if (c.stage == FcaCascadeStage.Finalized) revert FCA_CascadeDone();")
+    w(la, "        c.stage = FcaCascadeStage.Scraped;")
+    w(la, "        if (openCascades > 0) unchecked { openCascades -= 1; }")
+    w(la, "    }")
+    w(la, "")
+    for n in range(FLUSHER_PINGS):
+        w(la, f"    function flusherRipple_{n}(uint256 meta) external onlyFlusher {{")
+        w(la, f"        emit Ripple_{(n % 14)}(rippleSerial, msg.sender, meta, activeCycle);")
+        w(la, "        unchecked { rippleSerial += 1; }")
+        w(la, "    }")
+        w(la, "")
+
+
+def emit_lane_keys(la: list[str]) -> None:
+    for lid in range(1, LANE_COUNT + 1):
+        w(la, f"    function laneSalt_{lid}() external view returns (bytes32) {{")
+        w(la, f"        return lanes[{lid}].laneSalt;")
+        w(la, "    }")
+        w(la, "")
+
+
+def emit_vote_batch(la: list[str]) -> None:
+    for n in range(CASCADE_BATCHES):
+        w(la, f"    function batchVote_{n}(bytes32[] calldata ids, bool[] calldata ups) external whenRunning {{")
+        w(la, "        if (ids.length != ups.length) revert FCA_SizeMismatch();")
+        w(la, f"        if (ids.length > {8 + n}) revert FCA_ArrayWide();")
+        w(la, "        for (uint256 i; i < ids.length; ++i) {")
+        w(la, "            bytes32 tid = ids[i];")
+        w(la, "            FcaTicket storage t = tickets[tid];")
+        w(la, "            if (!t.open) revert FCA_TicketGone();")
+        w(la, "            if (t.runner == msg.sender) revert FCA_VoteSelf();")
+        w(la, "            if (voteCast[tid][msg.sender]) revert FCA_VoteSpent();")
+        w(la, "            voteCast[tid][msg.sender] = true;")
+        w(la, "            if (ups[i]) unchecked { t.upVotes += 1; }")
+        w(la, "            else unchecked { t.downVotes += 1; }")
+        w(la, "            emit Voted(tid, msg.sender, ups[i], activeCycle);")
+        w(la, "        }")
+        w(la, "    }")
+        w(la, "")
+
+
+def emit_runner_views(la: list[str]) -> None:
+    for n in range(min(FLUSHER_PINGS + 5, 22)):
+        w(la, f"    function runnerBench_{n}(address runner) external view returns (")
+        w(la, "        bool active,")
+        w(la, "        bytes32 tag,")
+        w(la, "        uint32 tally,")
+        w(la, "        uint256 mass")
+        w(la, "    ) {")
+        w(la, "        FcaRunnerBench storage b = runnerBenches[runner];")
+        w(la, "        active = b.active;")
+        w(la, "        tag = b.tag;")
+        w(la, "        tally = b.ticketCount;")
